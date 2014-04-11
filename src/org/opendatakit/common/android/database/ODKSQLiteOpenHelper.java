@@ -16,10 +16,11 @@ package org.opendatakit.common.android.database;
 
 import java.io.File;
 
+import org.opendatakit.common.android.utilities.WebLogger;
+
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteException;
-import android.util.Log;
 
 /**
  * We've taken this from Android's SQLiteOpenHelper. However, we can't appropriately lock the
@@ -43,6 +44,7 @@ import android.util.Log;
 public abstract class ODKSQLiteOpenHelper {
   private static final String t = ODKSQLiteOpenHelper.class.getSimpleName();
 
+  private final String mAppName;
   private final String mPath;
   private final String mName;
   private final CursorFactory mFactory;
@@ -66,10 +68,11 @@ public abstract class ODKSQLiteOpenHelper {
    *          number of the database (starting at 1); if the database is older,
    *          {@link #onUpgrade} will be used to upgrade the database
    */
-  public ODKSQLiteOpenHelper(String path, String name, CursorFactory factory, int version) {
+  public ODKSQLiteOpenHelper(String appName, String path, String name, CursorFactory factory, int version) {
     if (version < 1)
       throw new IllegalArgumentException("Version must be >= 1, was " + version);
 
+    mAppName = appName;
     mPath = path;
     mName = name;
     mFactory = factory;
@@ -91,6 +94,7 @@ public abstract class ODKSQLiteOpenHelper {
    * @return a read/write database object valid until {@link #close} is called
    */
   public SQLiteDatabase getWritableDatabase() {
+    WebLogger log = WebLogger.getLogger(mAppName);
     int attempts = 1;
     for (;; ++attempts) {
       try {
@@ -98,7 +102,7 @@ public abstract class ODKSQLiteOpenHelper {
         return db;
       } catch (SQLiteException ex) {
         ex.printStackTrace();
-        Log.i(t, "unable to access database");
+        log.i(t, "unable to access database");
         if (attempts > 3) {
           throw ex;
         }
@@ -106,7 +110,7 @@ public abstract class ODKSQLiteOpenHelper {
           Thread.sleep(50L);
         } catch (InterruptedException e) {
           e.printStackTrace();
-          Log.i(t, "resuming sleep after unable to access database");
+          log.i(t, "resuming sleep after unable to access database");
         }
       }
     }
@@ -192,6 +196,7 @@ public abstract class ODKSQLiteOpenHelper {
    *         {@link #close} is called.
    */
   public synchronized SQLiteDatabase getReadableDatabase() {
+    WebLogger log = WebLogger.getLogger(mAppName);
     if (mDatabase != null && mDatabase.isOpen()) {
       return mDatabase; // The database is already open for business
     }
@@ -205,7 +210,7 @@ public abstract class ODKSQLiteOpenHelper {
     } catch (SQLiteException e) {
       if (mName == null)
         throw e; // Can't open a temp database read-only!
-      Log.e(t, "Couldn't open " + mName + " for writing (will try read-only):", e);
+      log.e(t, "Couldn't open " + mName + " for writing (will try read-only):" + e.toString());
     }
 
     SQLiteDatabase db = null;
@@ -220,7 +225,7 @@ public abstract class ODKSQLiteOpenHelper {
       }
 
       onOpen(db);
-      Log.w(t, "Opened " + mName + " in read-only mode");
+      log.w(t, "Opened " + mName + " in read-only mode");
       mDatabase = db;
       return mDatabase;
     } finally {

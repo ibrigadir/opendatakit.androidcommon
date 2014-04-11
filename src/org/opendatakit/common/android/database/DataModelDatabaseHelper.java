@@ -32,7 +32,6 @@ import org.opendatakit.common.android.utilities.ODKFileUtils;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.Log;
 
 /**
  * This class helps open, create, and upgrade the database file.
@@ -91,8 +90,8 @@ public class DataModelDatabaseHelper extends WebKitDatabaseInfoHelper {
 
   public static final String FORMS_TABLE_NAME = "_formDefs";
 
-  public DataModelDatabaseHelper(String dbPath, String databaseName) {
-    super(dbPath, databaseName, null, APP_KEY, APP_VERSION);
+  public DataModelDatabaseHelper(String appName, String dbPath, String databaseName) {
+    super(appName, dbPath, databaseName, null, APP_KEY, APP_VERSION);
   }
 
   private void commonTableDefn(SQLiteDatabase db) {
@@ -148,8 +147,6 @@ public class DataModelDatabaseHelper extends WebKitDatabaseInfoHelper {
 
       db.setTransactionSuccessful();
 
-    } catch (Exception ex) {
-      Log.e(t, "Exception during deletion of data for formId:" + formId + " exception: " + ex.toString());
     } finally {
       db.endTransaction();
     }
